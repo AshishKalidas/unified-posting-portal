@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,10 +9,14 @@ import { Switch } from '@/components/ui/switch';
 import { Settings as SettingsIcon, Check, BellRing, Bell, BellOff, Globe } from 'lucide-react';
 import ConnectedAccounts from '@/components/auth/ConnectedAccounts';
 import AuthButtons from '@/components/auth/AuthButtons';
+import ModeToggle from '@/components/settings/ModeToggle';
+import { useAppMode } from '@/context/AppModeContext';
 import { useToast } from '@/components/ui/use-toast';
 
 const Settings = () => {
   const { toast } = useToast();
+  const { isDemoMode, setIsDemoMode } = useAppMode();
+  
   const [accounts, setAccounts] = useState([
     {
       provider: 'instagram',
@@ -99,6 +102,18 @@ const Settings = () => {
     });
   };
   
+  const handleModeToggle = (enableDemo: boolean) => {
+    setIsDemoMode(enableDemo);
+    
+    // In a real app, this would switch between APIs
+    if (!enableDemo) {
+      toast({
+        title: "Live Mode Notice",
+        description: "In a production application, this would connect to the real social media APIs.",
+      });
+    }
+  };
+  
   return (
     <MainLayout>
       <div className="mb-6">
@@ -114,6 +129,7 @@ const Settings = () => {
           <TabsTrigger value="accounts">Connected Accounts</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="profile">Profile</TabsTrigger>
+          <TabsTrigger value="app-mode">App Mode</TabsTrigger>
         </TabsList>
         
         <TabsContent value="accounts">
@@ -349,6 +365,48 @@ const Settings = () => {
                 <Button variant="outline" className="w-full">Enable Two-Factor Authentication</Button>
                 <Button variant="outline" className="w-full">Manage Sessions</Button>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="app-mode">
+          <ModeToggle 
+            isDemoMode={isDemoMode} 
+            onToggle={handleModeToggle} 
+          />
+          
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle>API Configuration</CardTitle>
+              <CardDescription>
+                Configure API keys and settings for live mode
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className={isDemoMode ? "opacity-50 pointer-events-none" : ""}>
+                <div className="space-y-2">
+                  <Label htmlFor="instagram-api">Instagram API Key</Label>
+                  <Input id="instagram-api" type="password" placeholder="Enter your Instagram API key" disabled={isDemoMode} />
+                </div>
+                
+                <div className="space-y-2 mt-4">
+                  <Label htmlFor="facebook-api">Facebook API Key</Label>
+                  <Input id="facebook-api" type="password" placeholder="Enter your Facebook API key" disabled={isDemoMode} />
+                </div>
+                
+                <div className="space-y-2 mt-4">
+                  <Label htmlFor="tiktok-api">TikTok API Key</Label>
+                  <Input id="tiktok-api" type="password" placeholder="Enter your TikTok API key" disabled={isDemoMode} />
+                </div>
+                
+                <Button className="mt-4" disabled={isDemoMode}>Save API Keys</Button>
+              </div>
+              
+              {isDemoMode && (
+                <div className="bg-muted p-4 rounded-md mt-2">
+                  <p className="text-sm text-muted-foreground">Switch to Live Mode to configure real API connections</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

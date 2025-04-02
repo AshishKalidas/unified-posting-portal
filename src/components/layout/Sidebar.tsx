@@ -35,12 +35,15 @@ const Sidebar = () => {
   const currentPath = window.location.pathname;
   
   return (
-    <div className="w-64 border-r bg-card/50 backdrop-blur-sm p-4 flex flex-col h-screen">
-      <div className="mb-8 py-4">
-        <h1 className="text-2xl font-bold text-center">
-          <span className="text-primary">Social</span>
-          <span className="text-accent">Actuator</span>
-        </h1>
+    <div className="w-64 border-r bg-card/50 backdrop-blur-sm p-4 flex flex-col min-h-full">
+      <div className="mb-6 py-2">
+        <div className="flex justify-center items-center">
+          <img 
+            src="/lovable-uploads/6f99515b-b927-47bf-b52a-731f42b70146.png" 
+            alt="Social Manager Logo" 
+            className="h-10"
+          />
+        </div>
       </div>
       
       <div className="flex-1">

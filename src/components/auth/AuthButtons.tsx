@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Instagram, Facebook } from 'lucide-react';
@@ -12,57 +11,81 @@ const AuthButtons = ({ onSuccess }: AuthButtonProps) => {
   const { toast } = useToast();
 
   const handleAuthClick = (provider: string) => {
-    // This would be replaced with actual OAuth implementation
-    toast({
-      title: "Authentication in demo mode",
-      description: `In a real app, this would open ${provider} OAuth flow`,
-    });
-    
-    // Mock successful authentication with demo data
-    setTimeout(() => {
-      const mockUserData = {
-        id: `${provider}_12345`,
-        username: `${provider}_user`,
-        profilePicture: '/placeholder.svg',
-        accessToken: `mock_token_${Math.random().toString(36).substr(2, 9)}`,
-      };
-      
-      onSuccess(provider, mockUserData);
-      
+    if (provider === 'instagram') {
+      // --- Instagram OAuth Flow ---
+      const instagramAppId = import.meta.env.VITE_INSTAGRAM_APP_ID;
+      // Ensure this matches your Instagram App config and the route you'll create
+      const redirectUri = encodeURIComponent('http://localhost:5173/auth/instagram/callback'); 
+      const scope = 'user_profile'; // Request basic profile info
+
+      if (!instagramAppId) {
+        console.error("Instagram App ID is not configured in .env");
+        toast({
+          title: "Configuration Error",
+          description: "Instagram integration is not configured correctly.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const authUrl = `https://api.instagram.com/oauth/authorize?client_id=${instagramAppId}&redirect_uri=${redirectUri}&scope=${scope}&response_type=code`;
+
+      // Redirect user to Instagram for authorization
+      window.location.href = authUrl;
+
+    } else {
+      // --- Mock logic for other providers ---
       toast({
-        title: "Successfully connected",
-        description: `Your ${provider} account has been connected successfully.`,
+        title: "Authentication in demo mode",
+        description: `In a real app, this would open ${provider} OAuth flow`,
       });
-    }, 1500);
+
+      // Mock successful authentication with demo data
+      setTimeout(() => {
+        const mockUserData = {
+          id: `${provider}_12345`,
+          username: `${provider}_user`,
+          profilePicture: '/placeholder.svg',
+          accessToken: `mock_token_${Math.random().toString(36).substr(2, 9)}`,
+        };
+
+        onSuccess(provider, mockUserData);
+
+        toast({
+          title: "Successfully connected (Demo)",
+          description: `Your ${provider} account has been connected successfully (Demo Mode).`,
+        });
+      }, 1500);
+    }
   };
 
   return (
     <div className="flex flex-col gap-4">
-      <Button 
-        className="auth-button-instagram flex items-center justify-center gap-2" 
+      <Button
+        className="auth-button-instagram flex items-center justify-center gap-2"
         onClick={() => handleAuthClick('instagram')}
       >
         <Instagram size={20} />
         Connect Instagram
       </Button>
-      
-      <Button 
+
+      <Button
         className="auth-button-facebook flex items-center justify-center gap-2"
         onClick={() => handleAuthClick('facebook')}
       >
         <Facebook size={20} />
         Connect Facebook
       </Button>
-      
-      <Button 
+
+      <Button
         className="auth-button-tiktok flex items-center justify-center gap-2"
         onClick={() => handleAuthClick('tiktok')}
       >
-        <svg 
-          width="20" 
-          height="20" 
-          viewBox="0 0 24 24" 
-          fill="none" 
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
           xmlns="http://www.w3.org/2000/svg"
           style={{ color: "white" }}
         >

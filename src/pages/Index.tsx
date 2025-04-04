@@ -95,12 +95,12 @@ const Index = () => {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen gradient-bg flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 animate-fade-in">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 animate-fade-in dark:bg-gray-800">
           <div className="text-center mb-6">
             <img 
-              src="/placeholder.svg" 
-              alt="Logo" 
-              className="h-16 mx-auto mb-2"
+              src="/lovable-uploads/6f99515b-b927-47bf-b52a-731f42b70146.png" 
+              alt="SocialActuator Logo" 
+              className="h-20 mx-auto mb-2"
             />
             <h1 className="text-3xl font-bold">
               <span className="text-primary">Social</span>

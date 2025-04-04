@@ -22,8 +22,8 @@ const PostCreator = () => {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
     if (!files || files.length === 0) return;
 
     const file = files[0];
@@ -38,8 +38,7 @@ const PostCreator = () => {
       return;
     }
 
-    // In a real app, this would upload the file to a server and get a URL
-    // For demo purposes, we'll create an object URL
+    // Create an object URL for the file
     const fileUrl = URL.createObjectURL(file);
     setMediaFiles([...mediaFiles, { url: fileUrl, type: fileType }]);
     
@@ -111,6 +110,7 @@ const PostCreator = () => {
     // Reset form
     setContent('');
     setMediaFiles([]);
+    setScheduledDate('');
   };
   
   return (
@@ -129,7 +129,7 @@ const PostCreator = () => {
         {mediaFiles.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {mediaFiles.map((media, index) => (
-              <div key={index} className="relative">
+              <div key={index} className="relative group">
                 {media.type === 'image' ? (
                   <img 
                     src={media.url} 
@@ -145,7 +145,8 @@ const PostCreator = () => {
                 )}
                 <button
                   onClick={() => handleRemoveMedia(index)}
-                  className="absolute top-1 right-1 bg-black bg-opacity-50 rounded-full p-1"
+                  className="absolute top-1 right-1 bg-black bg-opacity-50 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                  aria-label="Remove media"
                 >
                   <X className="h-3 w-3 text-white" />
                 </button>
@@ -258,7 +259,7 @@ const PostCreator = () => {
         <Button 
           className="w-full" 
           onClick={handlePost}
-          disabled={!content.trim() && mediaFiles.length === 0}
+          disabled={(!content.trim() && mediaFiles.length === 0)}
         >
           {isScheduled ? 'Schedule Post' : 'Post Now'}
         </Button>

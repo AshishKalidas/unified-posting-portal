@@ -22,6 +22,7 @@ const InstagramCallback = () => {
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     const code = searchParams.get('code');
+    const state = searchParams.get('state'); // Instagram returns our verification token in the state parameter
     const errorParam = searchParams.get('error');
     const errorReason = searchParams.get('error_reason');
     const errorDescription = searchParams.get('error_description');
@@ -53,6 +54,27 @@ const InstagramCallback = () => {
       setTimeout(() => navigate('/settings'), 5000);
       return;
     }
+
+    // Validate state parameter (verification token)
+    fetch('http://localhost:3000/auth/instagram/verification-token')
+      .then(response => response.json())
+      .then(data => {
+        if (state !== data.token) {
+          throw new Error('Invalid state parameter. This could be a CSRF attack.');
+        }
+        return exchangeCodeForToken(code);
+      })
+      .catch(err => {
+        console.error('Verification error:', err);
+        setError(`Authentication failed: ${err.message || 'Invalid verification token'}`);
+        setStatus('error');
+        toast({
+          title: "Instagram Connection Failed",
+          description: err.message || "Verification failed",
+          variant: "destructive",
+        });
+        setTimeout(() => navigate('/settings'), 5000);
+      });
 
     // --- Exchange code for access token ---
     const exchangeCodeForToken = async (authCode: string) => {
@@ -170,8 +192,6 @@ const InstagramCallback = () => {
         setTimeout(() => navigate('/settings'), 5000);
       }
     };
-
-    exchangeCodeForToken(code);
 
   }, [location, navigate, toast]);
 

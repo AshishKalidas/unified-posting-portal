@@ -11,6 +11,7 @@ import Comments from "./pages/Comments";
 import Publish from "./pages/Publish";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import InstagramCallback from "./components/auth/InstagramCallback";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +28,7 @@ const App = () => (
             <Route path="/comments" element={<Comments />} />
             <Route path="/publish" element={<Publish />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/auth/instagram/callback" element={<InstagramCallback />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

@@ -1,6 +1,6 @@
-
 import express from 'express';
 import cors from 'cors';
+import crypto from 'crypto';
 
 const app = express();
 const port = 3000;
@@ -16,6 +16,34 @@ app.use(express.json()); // for parsing application/json
 // In-memory storage for tokens (for demo purposes only)
 // Replace with database or secure storage in production
 const tokenStore = new Map();
+
+// Store for Instagram verification
+const instagramVerification = {
+  token: crypto.randomBytes(16).toString('hex'), // Generate a random verify token
+  mode: 'subscribe'
+};
+
+// Endpoint for Instagram webhook verification
+app.get('/instagram/webhook', (req, res) => {
+  const mode = req.query['hub.mode'];
+  const token = req.query['hub.verify_token'];
+  const challenge = req.query['hub.challenge'];
+
+  if (mode === instagramVerification.mode && token === instagramVerification.token) {
+    // Respond with the challenge to confirm the verification
+    console.log('Instagram webhook verified successfully');
+    res.status(200).send(challenge);
+  } else {
+    // Verification failed
+    console.error('Instagram webhook verification failed');
+    res.status(403).send('Verification failed');
+  }
+});
+
+// Return the verification token for client use
+app.get('/auth/instagram/verification-token', (req, res) => {
+  res.send({ token: instagramVerification.token });
+});
 
 app.post('/auth/instagram/store-token', (req, res) => {
   const { accessToken, userId, username } = req.body;
@@ -91,4 +119,5 @@ app.get('/', (req, res) => {
 
 app.listen(port, () => {
   console.log('Server listening at http://localhost:' + port);
+  console.log(`Instagram verify token: ${instagramVerification.token}`);
 });

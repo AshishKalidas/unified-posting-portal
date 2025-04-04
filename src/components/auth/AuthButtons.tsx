@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Instagram, Facebook } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
@@ -12,6 +12,27 @@ interface AuthButtonProps {
 const AuthButtons = ({ onSuccess }: AuthButtonProps) => {
   const { toast } = useToast();
   const { isDemoMode } = useAppMode();
+  const [verifyToken, setVerifyToken] = useState<string | null>(null);
+
+  // Fetch the Instagram verification token from the server
+  useEffect(() => {
+    if (!isDemoMode) {
+      fetch('http://localhost:3000/auth/instagram/verification-token')
+        .then(response => response.json())
+        .then(data => {
+          setVerifyToken(data.token);
+          console.log('Retrieved Instagram verification token');
+        })
+        .catch(error => {
+          console.error('Failed to retrieve verification token:', error);
+          toast({
+            title: "Error",
+            description: "Failed to retrieve verification token for Instagram",
+            variant: "destructive",
+          });
+        });
+    }
+  }, [isDemoMode, toast]);
 
   const handleAuthClick = (provider: string) => {
     if (provider === 'instagram') {
@@ -43,8 +64,11 @@ const AuthButtons = ({ onSuccess }: AuthButtonProps) => {
         const instagramAppId = "1657587694854878"; // Using the provided app ID
         const redirectUri = encodeURIComponent('http://localhost:5173/auth/instagram/callback'); 
         const scope = 'user_profile,user_media'; // Basic Display API scopes
+        
+        // Include the verify token in the state parameter
+        const state = verifyToken || crypto.randomUUID();
 
-        const authUrl = `https://api.instagram.com/oauth/authorize?client_id=${instagramAppId}&redirect_uri=${redirectUri}&scope=${scope}&response_type=code`;
+        const authUrl = `https://api.instagram.com/oauth/authorize?client_id=${instagramAppId}&redirect_uri=${redirectUri}&scope=${scope}&response_type=code&state=${state}`;
 
         // Redirect user to Instagram for authorization
         window.location.href = authUrl;
@@ -80,6 +104,7 @@ const AuthButtons = ({ onSuccess }: AuthButtonProps) => {
       <Button
         className="auth-button-instagram flex items-center justify-center gap-2"
         onClick={() => handleAuthClick('instagram')}
+        disabled={!isDemoMode && !verifyToken}
       >
         <Instagram size={20} />
         Connect Instagram

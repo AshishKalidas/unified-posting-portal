@@ -1,9 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Instagram, Facebook, Image, Calendar, Plus, X } from 'lucide-react';
+import { Instagram, Facebook, Image, Video, Calendar, Plus, X } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -11,7 +11,7 @@ import { useToast } from '@/components/ui/use-toast';
 
 const PostCreator = () => {
   const [content, setContent] = useState('');
-  const [images, setImages] = useState<string[]>([]);
+  const [mediaFiles, setMediaFiles] = useState<{url: string; type: 'image' | 'video'}[]>([]);
   const [platforms, setPlatforms] = useState({
     instagram: true,
     facebook: true,
@@ -20,23 +20,48 @@ const PostCreator = () => {
   const [isScheduled, setIsScheduled] = useState(false);
   const [scheduledDate, setScheduledDate] = useState('');
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleAddImage = () => {
-    // In a real app, this would open a file picker
-    // For demo purposes, we'll add a placeholder image
-    const newImageUrl = '/placeholder.svg';
-    setImages([...images, newImageUrl]);
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const file = files[0];
+    const fileType = file.type.startsWith('image/') ? 'image' : file.type.startsWith('video/') ? 'video' : null;
+    
+    if (!fileType) {
+      toast({
+        title: "Unsupported file type",
+        description: "Please upload an image or video file",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // In a real app, this would upload the file to a server and get a URL
+    // For demo purposes, we'll create an object URL
+    const fileUrl = URL.createObjectURL(file);
+    setMediaFiles([...mediaFiles, { url: fileUrl, type: fileType }]);
     
     toast({
-      title: "Image added",
-      description: "In a real app, this would open a file picker",
+      title: `${fileType.charAt(0).toUpperCase() + fileType.slice(1)} added`,
+      description: `Your ${fileType} has been added to the post`,
     });
+
+    // Reset the file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
   
-  const handleRemoveImage = (index: number) => {
-    const newImages = [...images];
-    newImages.splice(index, 1);
-    setImages(newImages);
+  const handleRemoveMedia = (index: number) => {
+    const newMediaFiles = [...mediaFiles];
+    
+    // Revoke the object URL to avoid memory leaks
+    URL.revokeObjectURL(newMediaFiles[index].url);
+    
+    newMediaFiles.splice(index, 1);
+    setMediaFiles(newMediaFiles);
   };
   
   const handlePlatformToggle = (platform: keyof typeof platforms) => {
@@ -46,11 +71,19 @@ const PostCreator = () => {
     });
   };
   
+  const triggerFileInput = (type: 'image' | 'video') => {
+    // Set accept attribute based on type
+    if (fileInputRef.current) {
+      fileInputRef.current.accept = type === 'image' ? 'image/*' : 'video/*';
+      fileInputRef.current.click();
+    }
+  };
+  
   const handlePost = () => {
-    if (!content.trim()) {
+    if (!content.trim() && mediaFiles.length === 0) {
       toast({
         title: "Error",
-        description: "Please add content to your post",
+        description: "Please add content or media to your post",
         variant: "destructive",
       });
       return;
@@ -77,7 +110,7 @@ const PostCreator = () => {
     
     // Reset form
     setContent('');
-    setImages([]);
+    setMediaFiles([]);
   };
   
   return (
@@ -93,17 +126,25 @@ const PostCreator = () => {
           onChange={(e) => setContent(e.target.value)}
         />
         
-        {images.length > 0 && (
+        {mediaFiles.length > 0 && (
           <div className="flex flex-wrap gap-2">
-            {images.map((image, index) => (
+            {mediaFiles.map((media, index) => (
               <div key={index} className="relative">
-                <img 
-                  src={image} 
-                  alt={`Image ${index + 1}`} 
-                  className="w-24 h-24 object-cover rounded-md"
-                />
+                {media.type === 'image' ? (
+                  <img 
+                    src={media.url} 
+                    alt={`Media ${index + 1}`} 
+                    className="w-24 h-24 object-cover rounded-md"
+                  />
+                ) : (
+                  <video 
+                    src={media.url} 
+                    className="w-24 h-24 object-cover rounded-md"
+                    controls
+                  />
+                )}
                 <button
-                  onClick={() => handleRemoveImage(index)}
+                  onClick={() => handleRemoveMedia(index)}
                   className="absolute top-1 right-1 bg-black bg-opacity-50 rounded-full p-1"
                 >
                   <X className="h-3 w-3 text-white" />
@@ -118,11 +159,27 @@ const PostCreator = () => {
             type="button" 
             variant="outline" 
             size="sm" 
-            onClick={handleAddImage}
+            onClick={() => triggerFileInput('image')}
           >
             <Image className="h-4 w-4 mr-2" />
             Add Image
           </Button>
+          <Button 
+            type="button" 
+            variant="outline" 
+            size="sm" 
+            onClick={() => triggerFileInput('video')}
+          >
+            <Video className="h-4 w-4 mr-2" />
+            Add Video
+          </Button>
+          <input 
+            type="file"
+            ref={fileInputRef}
+            className="hidden"
+            onChange={handleFileSelect}
+            accept="image/*,video/*"
+          />
         </div>
         
         <div className="border rounded-md p-3 space-y-3">
@@ -201,7 +258,7 @@ const PostCreator = () => {
         <Button 
           className="w-full" 
           onClick={handlePost}
-          disabled={!content.trim()}
+          disabled={!content.trim() && mediaFiles.length === 0}
         >
           {isScheduled ? 'Schedule Post' : 'Post Now'}
         </Button>

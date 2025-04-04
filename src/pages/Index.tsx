@@ -96,13 +96,20 @@ const Index = () => {
     return (
       <div className="min-h-screen gradient-bg flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 animate-fade-in">
-          <h1 className="text-3xl font-bold text-center mb-2">
-            <span className="text-primary">Social</span>
-            <span className="text-accent">Actuator</span>
-          </h1>
-          <p className="text-center text-muted-foreground mb-8">
-            Manage all your social media accounts in one place.
-          </p>
+          <div className="text-center mb-6">
+            <img 
+              src="/placeholder.svg" 
+              alt="Logo" 
+              className="h-16 mx-auto mb-2"
+            />
+            <h1 className="text-3xl font-bold">
+              <span className="text-primary">Social</span>
+              <span className="text-accent">Actuator</span>
+            </h1>
+            <p className="text-center text-muted-foreground">
+              Manage all your social media accounts in one place.
+            </p>
+          </div>
           
           <div className="space-y-6">
             <div className="bg-muted/50 rounded-lg p-4">

@@ -1,7 +1,9 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Instagram, Facebook } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { useAppMode } from '@/context/AppModeContext';
 
 interface AuthButtonProps {
   onSuccess: (provider: string, userData: any) => void;
@@ -9,30 +11,44 @@ interface AuthButtonProps {
 
 const AuthButtons = ({ onSuccess }: AuthButtonProps) => {
   const { toast } = useToast();
+  const { isDemoMode } = useAppMode();
 
   const handleAuthClick = (provider: string) => {
     if (provider === 'instagram') {
-      // --- Instagram OAuth Flow ---
-      const instagramAppId = import.meta.env.VITE_INSTAGRAM_APP_ID;
-      // Ensure this matches your Instagram App config and the route you'll create
-      const redirectUri = encodeURIComponent('http://localhost:5173/auth/instagram/callback'); 
-      const scope = 'user_profile'; // Request basic profile info
-
-      if (!instagramAppId) {
-        console.error("Instagram App ID is not configured in .env");
+      if (isDemoMode) {
+        // Demo mode handling
         toast({
-          title: "Configuration Error",
-          description: "Instagram integration is not configured correctly.",
-          variant: "destructive",
+          title: "Authentication in demo mode",
+          description: "In demo mode, this would connect to Instagram",
         });
-        return;
+
+        // Mock successful authentication with demo data
+        setTimeout(() => {
+          const mockUserData = {
+            id: `instagram_12345`,
+            username: `instagram_user`,
+            profilePicture: '/placeholder.svg',
+            accessToken: `mock_token_${Math.random().toString(36).substr(2, 9)}`,
+          };
+
+          onSuccess(provider, mockUserData);
+
+          toast({
+            title: "Successfully connected (Demo)",
+            description: "Your Instagram account has been connected successfully (Demo Mode).",
+          });
+        }, 1500);
+      } else {
+        // Real Instagram OAuth Flow
+        const instagramAppId = "1657587694854878"; // Using the provided app ID
+        const redirectUri = encodeURIComponent('http://localhost:5173/auth/instagram/callback'); 
+        const scope = 'user_profile,user_media'; // Basic Display API scopes
+
+        const authUrl = `https://api.instagram.com/oauth/authorize?client_id=${instagramAppId}&redirect_uri=${redirectUri}&scope=${scope}&response_type=code`;
+
+        // Redirect user to Instagram for authorization
+        window.location.href = authUrl;
       }
-
-      const authUrl = `https://api.instagram.com/oauth/authorize?client_id=${instagramAppId}&redirect_uri=${redirectUri}&scope=${scope}&response_type=code`;
-
-      // Redirect user to Instagram for authorization
-      window.location.href = authUrl;
-
     } else {
       // --- Mock logic for other providers ---
       toast({

@@ -1,3 +1,4 @@
+
 // src/components/auth/InstagramCallback.tsx
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -55,13 +56,13 @@ const InstagramCallback = () => {
 
     // --- Exchange code for access token ---
     const exchangeCodeForToken = async (authCode: string) => {
-      const clientId = import.meta.env.VITE_INSTAGRAM_APP_ID;
-      const clientSecret = import.meta.env.VITE_INSTAGRAM_APP_SECRET;
+      const clientId = "1657587694854878"; // Using the provided app ID
+      const clientSecret = "9db54e265a4a7a3ef1a9f3ff3f4dd529"; // Using the provided app secret
       // Must match the redirect_uri used in the initial auth request
       const redirectUri = 'http://localhost:5173/auth/instagram/callback'; 
 
       if (!clientId || !clientSecret) {
-        console.error("Instagram App ID or Secret is not configured in .env");
+        console.error("Instagram App ID or Secret is not configured correctly");
         setError("Configuration Error: Instagram integration is not configured correctly.");
         setStatus('error');
         toast({

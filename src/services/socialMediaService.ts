@@ -1,9 +1,17 @@
 
 import { useAppMode } from "@/context/AppModeContext";
 
+// Types
+interface SocialMediaUserData {
+  id: string;
+  username: string;
+  profilePicture?: string;
+  accessToken?: string;
+}
+
 // Demo mode implementations
 const demoAuth = (provider: string) => {
-  return new Promise<any>((resolve) => {
+  return new Promise<SocialMediaUserData>((resolve) => {
     setTimeout(() => {
       resolve({
         id: `${provider}_12345`,
@@ -36,213 +44,137 @@ const demoPostContent = (content: string, platforms: string[], image?: File) => 
 };
 
 // Real API implementations
-const realAuth = async (provider: string, apiKey?: string) => { // apiKey might not be needed for OAuth initiation
+const realAuth = async (provider: string) => {
   console.log(`Initiating authentication with ${provider}`);
 
   if (provider === 'instagram') {
-    const clientId = import.meta.env.VITE_INSTAGRAM_APP_ID;
-    const redirectUri = 'http://localhost:5173/auth/instagram/callback'; // Must match callback and FB App config
-    const scope = 'user_profile,user_media'; // Basic Display API scopes
-
-    if (!clientId) {
-      console.error("Instagram App ID is not configured in .env");
-      throw new Error("Configuration Error: Instagram integration is not configured correctly.");
-    }
-
-    const authUrl = `https://api.instagram.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&response_type=code`;
-
-    // Redirect the user's browser to Instagram's authorization page
-    window.location.href = authUrl;
-    
-    // Return a promise that never resolves, as the page navigates away
-    return new Promise(() => { });
-
-  } else if (provider === 'facebook') {
-    const clientId = import.meta.env.VITE_FACEBOOK_APP_ID;
-    const redirectUri = 'http://localhost:5173/auth/facebook/callback';
-    const scope = 'pages_manage_posts,pages_read_engagement';
-
-    if (!clientId) {
-      console.error("Facebook App ID is not configured in .env");
-      throw new Error("Configuration Error: Facebook integration is not configured correctly.");
-    }
-
-    const authUrl = `https://www.facebook.com/v12.0/dialog/oauth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}`;
-    window.location.href = authUrl;
-    return new Promise(() => { });
-
-  } else if (provider === 'tiktok') {
-    const clientKey = import.meta.env.VITE_TIKTOK_CLIENT_KEY;
-    const redirectUri = 'http://localhost:5173/auth/tiktok/callback';
-    const scope = 'user.info.basic,video.list';
-
-    if (!clientKey) {
-      console.error("TikTok Client Key is not configured in .env");
-      throw new Error("Configuration Error: TikTok integration is not configured correctly.");
-    }
-
-    const authUrl = `https://www.tiktok.com/v2/auth/authorize?client_key=${clientKey}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&response_type=code`;
-    window.location.href = authUrl;
-    return new Promise(() => { });
+    // Instagram OAuth is handled by redirect, so we don't need to do anything here
+    // The redirect happens in the AuthButtons component
+    // This function won't actually return, as the page navigates away
+    return new Promise<SocialMediaUserData>(() => {});
   } else {
-    throw new Error(`Unsupported provider: ${provider}`);
+    throw new Error(`Authentication for ${provider} not yet implemented`);
   }
 };
 
-const realGetAnalytics = async (platform: string, timeRange: string, apiKey: string) => {
-  // This would use the real API to get analytics data
-  console.log(`Getting ${platform} analytics for ${timeRange} using API key: ${apiKey}`);
-  
-  // In a real implementation, this would use the platform-specific APIs
+const realGetAnalytics = async (platform: string, timeRange: string, userId: string) => {
+  // Make a request to our backend, which will handle the API call with the stored token
   try {
-    switch(platform) {
-      case 'facebook':
-        const fbResponse = await fetch(`https://graph.facebook.com/v12.0/me/insights?metric=post_impressions,post_engagement&period=${timeRange}`, {
-          headers: { 'Authorization': `Bearer ${apiKey}` }
-        });
-        return fbResponse.json();
-        
-      case 'instagram':
-        const igResponse = await fetch(`https://graph.facebook.com/v12.0/me/insights?metric=impressions,reach,engagement&period=${timeRange}`, {
-          headers: { 'Authorization': `Bearer ${apiKey}` }
-        });
-        return igResponse.json();
-        
-      case 'tiktok':
-        const ttResponse = await fetch(`https://open.tiktokapis.com/v2/statistics/video/query/`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            filters: {
-              time_range: {
-                start: getStartDate(timeRange),
-                end: new Date().toISOString()
-              }
-            }
-          })
-        });
-        return ttResponse.json();
-        
-      default:
-        throw new Error(`Unsupported platform: ${platform}`);
+    const response = await fetch(`http://localhost:3000/api/social/${platform}/analytics`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        userId,
+        data: { timeRange }
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`API request failed with status ${response.status}`);
     }
+    
+    return await response.json();
   } catch (error) {
-    console.error('Analytics fetch failed:', error);
+    console.error('Failed to fetch analytics:', error);
     throw error;
   }
-  
-  function getStartDate(range: string) {
-    const now = new Date();
-    switch(range) {
-      case '24h': return new Date(now.setDate(now.getDate() - 1)).toISOString();
-      case '7d': return new Date(now.setDate(now.getDate() - 7)).toISOString();
-      case '30d': return new Date(now.setDate(now.getDate() - 30)).toISOString();
-      default: return new Date(now.setDate(now.getDate() - 7)).toISOString();
-    }
+};
+
+const realPostContent = async (content: string, platforms: string[], userId: string, image?: File) => {
+  // For each platform, make a request to our backend
+  try {
+    const results = await Promise.all(platforms.map(async (platform) => {
+      const formData = new FormData();
+      formData.append('content', content);
+      if (image) {
+        formData.append('image', image);
+      }
+      
+      const response = await fetch(`http://localhost:3000/api/social/${platform}/post`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          userId,
+          data: { content, hasImage: !!image }
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`API request failed with status ${response.status}`);
+      }
+      
+      return response.json();
+    }));
+    
+    return results.every(res => res.success);
+  } catch (error) {
+    console.error('Failed to post content:', error);
+    throw error;
   }
 };
 
-const realPostContent = async (content: string, platforms: string[], apiKeys: Record<string, string>, image?: File) => {
-  // This would post to the real APIs
-  console.log(`Posting content to ${platforms.join(', ')}`, content, image);
-  
-  // In a real implementation, this would use the platform-specific APIs
-  // Implement actual API calls for each platform
-  const results = await Promise.all(platforms.map(async (platform) => {
-    const apiKey = apiKeys[platform];
-    if (!apiKey) throw new Error(`Missing API key for ${platform}`);
-    
-    switch(platform) {
-      case 'facebook':
-        // Facebook Page Post API
-        const fbResponse = await fetch(`https://graph.facebook.com/v12.0/me/feed`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            message: content,
-            published: true
-          })
-        });
-        return fbResponse.json();
-        
-      case 'instagram':
-        // Instagram Graph API
-        const igResponse = await fetch(`https://graph.facebook.com/v12.0/me/media`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            caption: content,
-            image_url: image ? URL.createObjectURL(image) : undefined
-          })
-        });
-        return igResponse.json();
-        
-      case 'tiktok':
-        // TikTok Video Upload API
-        const formData = new FormData();
-        formData.append('description', content);
-        if (image) formData.append('video', image);
-        
-        const ttResponse = await fetch(`https://open.tiktokapis.com/v2/post/publish/inbox/video/upload/`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${apiKey}`
-          },
-          body: formData
-        });
-        return ttResponse.json();
-        
-      default:
-        throw new Error(`Unsupported platform: ${platform}`);
+// Check connection status with the backend
+const checkConnection = async (provider: string, userId: string) => {
+  try {
+    const response = await fetch(`http://localhost:3000/auth/check-connection/${provider}/${userId}`);
+    if (!response.ok) {
+      throw new Error(`Failed to check connection status: ${response.status}`);
     }
-  }));
-
-  return results.every(res => res.success);
+    return response.json();
+  } catch (error) {
+    console.error('Connection check failed:', error);
+    return { isConnected: false };
+  }
 };
 
 // Service wrapper that chooses between demo and real implementations
 export const useSocialMediaService = () => {
   const { isDemoMode } = useAppMode();
   
-  const authenticate = async (provider: string, apiKey?: string) => {
+  const authenticate = async (provider: string) => {
     if (isDemoMode) {
       return demoAuth(provider);
     } else {
-      if (!apiKey) throw new Error(`API key required for ${provider}`);
-      return realAuth(provider, apiKey);
+      return realAuth(provider);
     }
   };
   
-  const getAnalytics = async (platform: string, timeRange: string = '7d', apiKey?: string) => {
+  const getAnalytics = async (platform: string, timeRange: string = '7d', userId?: string) => {
     if (isDemoMode) {
       return demoGetAnalytics(platform, timeRange);
     } else {
-      if (!apiKey) throw new Error(`API key required for ${platform}`);
-      return realGetAnalytics(platform, timeRange, apiKey);
+      if (!userId) throw new Error(`User ID required for real mode analytics`);
+      return realGetAnalytics(platform, timeRange, userId);
     }
   };
   
-  const postContent = async (content: string, platforms: string[], apiKeys?: Record<string, string>, image?: File) => {
+  const postContent = async (content: string, platforms: string[], userId?: string, image?: File) => {
     if (isDemoMode) {
       return demoPostContent(content, platforms, image);
     } else {
-      if (!apiKeys) throw new Error("API keys required for posting");
-      return realPostContent(content, platforms, apiKeys, image);
+      if (!userId) throw new Error("User ID required for posting in real mode");
+      return realPostContent(content, platforms, userId, image);
+    }
+  };
+  
+  const isConnected = async (provider: string, userId?: string) => {
+    if (isDemoMode) {
+      // In demo mode, always return true
+      return Promise.resolve({ isConnected: true, username: `${provider}_user` });
+    } else {
+      if (!userId) return { isConnected: false };
+      return checkConnection(provider, userId);
     }
   };
   
   return {
     authenticate,
     getAnalytics,
-    postContent
+    postContent,
+    isConnected
   };
 };

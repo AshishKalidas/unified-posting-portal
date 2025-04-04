@@ -106,6 +106,11 @@ const InstagramCallback = () => {
         const profileResponse = await fetch(profileUrl);
         const profileData = await profileResponse.json();
 
+        // Validate we got the expected response format
+        if (!profileData.id || !profileData.username) {
+          throw new Error('Invalid profile data received from Instagram');
+        }
+
         if (!profileResponse.ok || profileData.error) {
             throw new Error(profileData.error?.message || `Failed to fetch user profile. Status: ${profileResponse.status}`);
         }
@@ -117,10 +122,36 @@ const InstagramCallback = () => {
           description: `Successfully connected as ${profileData.username}.`,
         });
 
-        // TODO: Store the access token securely (e.g., context, local storage - consider security implications)
-        // TODO: Update the application state (e.g., call onSuccess from Settings page if possible, or use global state)
-        console.log("Access Token:", accessToken); // Log for now, remove in production
-        console.log("User Data:", profileData);
+        // Send the access token and user ID to the server for secure storage
+        fetch('http://localhost:3000/auth/instagram/store-token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            accessToken: accessToken,
+            userId: userId,
+            username: profileData.username,
+          }),
+        })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`Failed to store token: ${response.status}`);
+          }
+          console.log("Instagram Access Token sent to server.");
+        })
+        .catch(error => {
+          console.error('Error storing access token:', error);
+          setError(`Failed to store access token: ${error.message || 'An unknown error occurred.'}`);
+          setStatus('error');
+          toast({
+            title: "Instagram Connection Failed",
+            description: error.message || "Could not store access token.",
+            variant: "destructive",
+          });
+          setTimeout(() => navigate('/settings'), 5000);
+          return;
+        });
 
         // Redirect back to settings page after success
         navigate('/settings');

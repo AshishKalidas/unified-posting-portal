@@ -38,20 +38,21 @@ const AuthButtons = ({ onSuccess }: AuthButtonProps) => {
       const state = verifyToken || crypto.randomUUID();
 
       const authUrl = `https://api.instagram.com/oauth/authorize?client_id=${instagramAppId}&redirect_uri=${redirectUri}&scope=${scope}&response_type=code&state=${state}`;
-
+      
+      console.log("Instagram auth URL:", authUrl);
+      
       // Redirect user to Instagram for authorization
       window.location.href = authUrl;
     } else if (provider === 'tiktok') {
-      // TikTok OAuth flow - using TikTok's recommended flow
+      // TikTok OAuth flow using TikTok Login Kit
       const tiktokClientKey = "sbaw2rsueubl3ct46b";
       const redirectUri = encodeURIComponent(window.location.origin + '/auth/tiktok/callback');
       const scope = 'user.info.basic,video.list';
-      const state = crypto.randomUUID();
+      const state = verifyToken || crypto.randomUUID();
       
-      // Use the correct TikTok authorization URL
-      const authUrl = `https://www.tiktok.com/v2/auth/authorize?client_key=${tiktokClientKey}&redirect_uri=${redirectUri}&scope=${scope}&response_type=code&state=${state}`;
+      // Use the TikTok Login Kit URL
+      const authUrl = `https://www.tiktok.com/auth/authorize/?client_key=${tiktokClientKey}&redirect_uri=${redirectUri}&scope=${scope}&response_type=code&state=${state}`;
       
-      // Log the URL before redirecting
       console.log("TikTok auth URL:", authUrl);
       
       // Redirect user to TikTok for authorization

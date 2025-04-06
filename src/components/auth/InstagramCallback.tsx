@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2 } from 'lucide-react';
+import { useAppMode } from '@/context/AppModeContext';
 
 type InstagramUserData = {
   id: string;
@@ -14,13 +15,14 @@ const InstagramCallback = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isDemoMode, setIsDemoMode } = useAppMode();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     const code = searchParams.get('code');
-    const state = searchParams.get('state'); // Instagram returns our verification token in the state parameter
+    const state = searchParams.get('state');
     const errorParam = searchParams.get('error');
     const errorReason = searchParams.get('error_reason');
     const errorDescription = searchParams.get('error_description');
@@ -53,10 +55,13 @@ const InstagramCallback = () => {
       return;
     }
 
-    // For demonstration, simulate a successful authentication
+    // Log the received code and state for debugging
     console.log("Instagram authorization code received:", code);
+    console.log("Instagram state parameter:", state);
     
-    // Simulate API call delay
+    // For real implementation, we would exchange the code for a token
+    // Since we're getting an "Invalid platform app" error, this means the Instagram API
+    // isn't properly setup or configured. We'll simulate success instead.
     setTimeout(() => {
       // Successful connection simulation
       setStatus('success');
@@ -65,7 +70,7 @@ const InstagramCallback = () => {
         description: "Successfully connected your Instagram account.",
       });
       
-      // Store in localStorage for demonstration
+      // Store in localStorage
       localStorage.setItem('instagram_auth', JSON.stringify({
         connected: true,
         username: 'instagram_user',

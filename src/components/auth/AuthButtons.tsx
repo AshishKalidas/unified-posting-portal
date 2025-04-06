@@ -11,7 +11,6 @@ interface AuthButtonProps {
 
 const AuthButtons = ({ onSuccess }: AuthButtonProps) => {
   const { toast } = useToast();
-  const { isDemoMode } = useAppMode();
   const [verifyToken, setVerifyToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<Record<string, boolean>>({
     instagram: false,
@@ -19,28 +18,18 @@ const AuthButtons = ({ onSuccess }: AuthButtonProps) => {
     tiktok: false
   });
 
-  // Generate a local verification token if the server request fails
+  // Generate a local verification token
   useEffect(() => {
-    // Try to fetch from server first
-    fetch('http://localhost:3000/auth/instagram/verification-token')
-      .then(response => response.json())
-      .then(data => {
-        setVerifyToken(data.token);
-        console.log('Retrieved Instagram verification token from server');
-      })
-      .catch(error => {
-        // If server fetch fails, generate a local token
-        const localToken = crypto.randomUUID();
-        setVerifyToken(localToken);
-        console.log('Generated local verification token:', localToken);
-      });
-  }, [toast]);
+    const localToken = crypto.randomUUID();
+    setVerifyToken(localToken);
+    console.log('Generated local verification token:', localToken);
+  }, []);
 
   const handleAuthClick = (provider: string) => {
     setIsLoading({...isLoading, [provider]: true});
     
     if (provider === 'instagram') {
-      // Real Instagram OAuth Flow
+      // Instagram OAuth Flow
       const instagramAppId = "1657587694854878"; 
       const redirectUri = encodeURIComponent(window.location.origin + '/auth/instagram/callback'); 
       const scope = 'user_profile,user_media'; 
@@ -53,13 +42,17 @@ const AuthButtons = ({ onSuccess }: AuthButtonProps) => {
       // Redirect user to Instagram for authorization
       window.location.href = authUrl;
     } else if (provider === 'tiktok') {
-      // TikTok OAuth flow
+      // TikTok OAuth flow - using TikTok's recommended flow
       const tiktokClientKey = "sbaw2rsueubl3ct46b";
       const redirectUri = encodeURIComponent(window.location.origin + '/auth/tiktok/callback');
       const scope = 'user.info.basic,video.list';
       const state = crypto.randomUUID();
       
-      const authUrl = `https://www.tiktok.com/auth/authorize?client_key=${tiktokClientKey}&redirect_uri=${redirectUri}&scope=${scope}&response_type=code&state=${state}`;
+      // Use the correct TikTok authorization URL
+      const authUrl = `https://www.tiktok.com/v2/auth/authorize?client_key=${tiktokClientKey}&redirect_uri=${redirectUri}&scope=${scope}&response_type=code&state=${state}`;
+      
+      // Log the URL before redirecting
+      console.log("TikTok auth URL:", authUrl);
       
       // Redirect user to TikTok for authorization
       window.location.href = authUrl;

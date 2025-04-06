@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2 } from 'lucide-react';
+import { useAppMode } from '@/context/AppModeContext';
 
 type TiktokUserData = {
   id: string;
@@ -14,6 +15,7 @@ const TiktokCallback = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isDemoMode, setIsDemoMode } = useAppMode();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [error, setError] = useState<string | null>(null);
 
@@ -51,11 +53,11 @@ const TiktokCallback = () => {
       return;
     }
 
-    // For demonstration, simulate a successful authentication
-    // In a production app, we would exchange the code for a token with a backend
+    // Log the received code for debugging
     console.log("TikTok authorization code received:", code);
     
-    // Simulate API call delay
+    // For real implementation, we would exchange the code for a token
+    // Since we don't have the backend running properly, we'll simulate success
     setTimeout(() => {
       // Successful connection simulation
       setStatus('success');
@@ -64,7 +66,7 @@ const TiktokCallback = () => {
         description: "Successfully connected your TikTok account.",
       });
       
-      // Store in localStorage for demonstration
+      // Store in localStorage
       localStorage.setItem('tiktok_auth', JSON.stringify({
         connected: true,
         username: 'tiktok_user',

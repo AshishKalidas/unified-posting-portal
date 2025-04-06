@@ -9,7 +9,8 @@ interface AppModeContextType {
 const AppModeContext = createContext<AppModeContextType | undefined>(undefined);
 
 export const AppModeProvider = ({ children }: { children: ReactNode }) => {
-  const [isDemoMode, setIsDemoMode] = useState(false); // Changed to false by default
+  // Setting isDemoMode to false by default for live mode
+  const [isDemoMode, setIsDemoMode] = useState(false);
 
   return (
     <AppModeContext.Provider value={{ isDemoMode, setIsDemoMode }}>

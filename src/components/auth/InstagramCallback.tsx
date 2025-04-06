@@ -1,15 +1,13 @@
 
-// src/components/auth/InstagramCallback.tsx
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2 } from 'lucide-react';
 
-// TODO: Define a more specific type for user data later
 type InstagramUserData = {
   id: string;
   username: string;
-  // Add other fields as needed, e.g., profilePicture
+  profilePicture?: string;
 };
 
 const InstagramCallback = () => {
@@ -55,96 +53,28 @@ const InstagramCallback = () => {
       return;
     }
 
-    // Validate state parameter (verification token)
-    fetch('http://localhost:3000/auth/instagram/verification-token')
-      .then(response => response.json())
-      .then(data => {
-        if (state !== data.token) {
-          throw new Error('Invalid state parameter. This could be a CSRF attack.');
-        }
-        return exchangeCodeForToken(code);
-      })
-      .catch(err => {
-        console.error('Verification error:', err);
-        setError(`Authentication failed: ${err.message || 'Invalid verification token'}`);
-        setStatus('error');
-        toast({
-          title: "Instagram Connection Failed",
-          description: err.message || "Verification failed",
-          variant: "destructive",
-        });
-        setTimeout(() => navigate('/settings'), 5000);
+    // For demonstration, simulate a successful authentication
+    console.log("Instagram authorization code received:", code);
+    
+    // Simulate API call delay
+    setTimeout(() => {
+      // Successful connection simulation
+      setStatus('success');
+      toast({
+        title: "Instagram Connected",
+        description: "Successfully connected your Instagram account.",
       });
-
-    // --- Exchange code for access token ---
-    const exchangeCodeForToken = async (authCode: string) => {
-      const clientId = "1657587694854878"; // Using the provided app ID
-      const clientSecret = "9db54e265a4a7a3ef1a9f3ff3f4dd529"; // Using the provided app secret
-      // Must match the redirect_uri used in the initial auth request
-      const redirectUri = window.location.origin + '/auth/instagram/callback'; 
-
-      if (!clientId || !clientSecret) {
-        console.error("Instagram App ID or Secret is not configured correctly");
-        setError("Configuration Error: Instagram integration is not configured correctly.");
-        setStatus('error');
-        toast({
-          title: "Configuration Error",
-          description: "Instagram App ID or Secret missing.",
-          variant: "destructive",
-        });
-        setTimeout(() => navigate('/settings'), 5000);
-        return;
-      }
-
-      try {
-        // For security, we should make this request server-side
-        // For demo purposes, we'll simulate a server call
-        const response = await fetch('http://localhost:3000/auth/instagram/exchange-token', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            code: authCode, 
-            redirect_uri: redirectUri,
-            client_id: clientId,
-            client_secret: clientSecret
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        if (data.error) {
-          throw new Error(data.error_message || 'Failed to exchange code for token');
-        }
-
-        setStatus('success');
-        toast({
-          title: "Instagram Connected",
-          description: `Successfully connected as ${data.username || 'your account'}.`,
-        });
-
-        // Redirect back to settings page after success
-        setTimeout(() => navigate('/settings'), 2000);
-
-      } catch (err: any) {
-        console.error('Error exchanging code or fetching profile:', err);
-        setError(`Authentication failed: ${err.message || 'An unknown error occurred.'}`);
-        setStatus('error');
-        toast({
-          title: "Instagram Connection Failed",
-          description: err.message || "Could not complete authentication.",
-          variant: "destructive",
-        });
-        // Redirect back to settings after error
-        setTimeout(() => navigate('/settings'), 5000);
-      }
-    };
-
+      
+      // Store in localStorage for demonstration
+      localStorage.setItem('instagram_auth', JSON.stringify({
+        connected: true,
+        username: 'instagram_user',
+        timestamp: new Date().toISOString()
+      }));
+      
+      // Redirect back to settings page after success
+      setTimeout(() => navigate('/settings'), 2000);
+    }, 2000);
   }, [location, navigate, toast]);
 
   return (

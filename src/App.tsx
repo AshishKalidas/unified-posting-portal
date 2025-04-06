@@ -12,6 +12,7 @@ import Publish from "./pages/Publish";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import InstagramCallback from "./components/auth/InstagramCallback";
+import TiktokCallback from "./components/auth/TiktokCallback";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="/publish" element={<Publish />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/auth/instagram/callback" element={<InstagramCallback />} />
+            <Route path="/auth/tiktok/callback" element={<TiktokCallback />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

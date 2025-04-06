@@ -1,15 +1,43 @@
+
 import express from 'express';
 import cors from 'cors';
 import crypto from 'crypto';
+import axios from 'axios';
 
 const app = express();
 const port = 3000;
 
-// Enable CORS for http://localhost:5173
-const corsOptions = {
-  origin: 'http://localhost:5173',
-};
-app.use(cors(corsOptions));
+// Enable CORS for the origin that matches the client origin
+app.use(cors({
+  origin: function(origin, callback) {
+    const allowedOrigins = [
+      'http://localhost:5173',
+      'http://localhost:8080',
+      /\.lovableproject\.com$/
+    ];
+    
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    let allowed = false;
+    for (const allowedOrigin of allowedOrigins) {
+      if (typeof allowedOrigin === 'string' && origin === allowedOrigin) {
+        allowed = true;
+        break;
+      } else if (allowedOrigin instanceof RegExp && allowedOrigin.test(origin)) {
+        allowed = true;
+        break;
+      }
+    }
+    
+    if (allowed) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
 
 app.use(express.json()); // for parsing application/json
 
@@ -43,6 +71,128 @@ app.get('/instagram/webhook', (req, res) => {
 // Return the verification token for client use
 app.get('/auth/instagram/verification-token', (req, res) => {
   res.send({ token: instagramVerification.token });
+});
+
+// Handle Instagram token exchange
+app.post('/auth/instagram/exchange-token', async (req, res) => {
+  try {
+    const { code, redirect_uri, client_id, client_secret } = req.body;
+    
+    if (!code || !redirect_uri || !client_id || !client_secret) {
+      return res.status(400).json({ 
+        error: true, 
+        error_message: 'Missing required parameters'
+      });
+    }
+    
+    // Exchange code for access token with Instagram API
+    const tokenUrl = 'https://api.instagram.com/oauth/access_token';
+    const formData = new URLSearchParams();
+    formData.append('client_id', client_id);
+    formData.append('client_secret', client_secret);
+    formData.append('grant_type', 'authorization_code');
+    formData.append('redirect_uri', redirect_uri);
+    formData.append('code', code);
+    
+    const tokenResponse = await axios.post(tokenUrl, formData, {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
+    });
+    
+    if (tokenResponse.data.error_message) {
+      return res.status(400).json({ 
+        error: true, 
+        error_message: tokenResponse.data.error_message 
+      });
+    }
+
+    const accessToken = tokenResponse.data.access_token;
+    const userId = tokenResponse.data.user_id;
+    
+    // Fetch basic user data from Instagram Graph API
+    const profileUrl = `https://graph.instagram.com/${userId}?fields=id,username&access_token=${accessToken}`;
+    const profileResponse = await axios.get(profileUrl);
+
+    // Store token
+    tokenStore.set(userId, { 
+      accessToken, 
+      username: profileResponse.data.username,
+      provider: 'instagram'
+    });
+    
+    // Return success with user data
+    res.json({ 
+      success: true,
+      userId: userId,
+      username: profileResponse.data.username
+    });
+    
+  } catch (error) {
+    console.error('Instagram token exchange error:', error);
+    res.status(500).json({ 
+      error: true, 
+      error_message: error.message || 'Failed to exchange token'
+    });
+  }
+});
+
+// Handle TikTok token exchange
+app.post('/auth/tiktok/exchange-token', async (req, res) => {
+  try {
+    const { code, redirect_uri, client_key, client_secret } = req.body;
+    
+    if (!code || !redirect_uri || !client_key || !client_secret) {
+      return res.status(400).json({ 
+        error: true, 
+        error_message: 'Missing required parameters'
+      });
+    }
+
+    // Exchange code for access token with TikTok API
+    const tokenUrl = 'https://open-api.tiktok.com/oauth/access_token/';
+    const params = new URLSearchParams({
+      client_key,
+      client_secret,
+      code,
+      grant_type: 'authorization_code',
+      redirect_uri
+    });
+    
+    const tokenResponse = await axios.post(`${tokenUrl}?${params.toString()}`);
+    
+    if (tokenResponse.data.error) {
+      return res.status(400).json({ 
+        error: true, 
+        error_message: tokenResponse.data.error.description
+      });
+    }
+
+    const data = tokenResponse.data.data;
+    const accessToken = data.access_token;
+    const openId = data.open_id;
+    
+    // Store token
+    tokenStore.set(openId, { 
+      accessToken, 
+      username: `tiktok_user_${openId.substr(0, 5)}`,
+      provider: 'tiktok'
+    });
+    
+    // Return success with user data
+    res.json({ 
+      success: true,
+      userId: openId,
+      username: `tiktok_user_${openId.substr(0, 5)}`
+    });
+    
+  } catch (error) {
+    console.error('TikTok token exchange error:', error.response?.data || error.message);
+    res.status(500).json({ 
+      error: true, 
+      error_message: error.message || 'Failed to exchange token'
+    });
+  }
 });
 
 app.post('/auth/instagram/store-token', (req, res) => {

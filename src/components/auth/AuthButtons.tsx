@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Instagram, Facebook } from 'lucide-react';
@@ -18,7 +17,6 @@ const AuthButtons = ({ onSuccess }: AuthButtonProps) => {
     tiktok: false
   });
 
-  // Generate a local verification token
   useEffect(() => {
     const localToken = crypto.randomUUID();
     setVerifyToken(localToken);
@@ -29,41 +27,32 @@ const AuthButtons = ({ onSuccess }: AuthButtonProps) => {
     setIsLoading({...isLoading, [provider]: true});
     
     if (provider === 'instagram') {
-      // Instagram OAuth Flow
       const instagramAppId = "1657587694854878"; 
-      const redirectUri = encodeURIComponent(window.location.origin + '/auth/instagram/callback'); 
-      const scope = 'user_profile,user_media'; 
+      const redirectUri = encodeURIComponent(window.location.origin + '/auth/instagram/callback');
+      const scope = 'user_profile,user_media,instagram_graph_user_profile,instagram_graph_user_media'; 
       
-      // Include the verify token in the state parameter
       const state = verifyToken || crypto.randomUUID();
-
       const authUrl = `https://api.instagram.com/oauth/authorize?client_id=${instagramAppId}&redirect_uri=${redirectUri}&scope=${scope}&response_type=code&state=${state}`;
       
       console.log("Instagram auth URL:", authUrl);
-      
-      // Redirect user to Instagram for authorization
-      window.location.href = authUrl;
-    } else if (provider === 'tiktok') {
-      // TikTok OAuth flow using TikTok Login Kit
-      const tiktokClientKey = "sbaw2rsueubl3ct46b";
-      const redirectUri = encodeURIComponent(window.location.origin + '/auth/tiktok/callback');
-      const scope = 'user.info.basic,video.list';
-      const state = verifyToken || crypto.randomUUID();
-      
-      // Use the TikTok Login Kit URL
-      const authUrl = `https://www.tiktok.com/auth/authorize/?client_key=${tiktokClientKey}&redirect_uri=${redirectUri}&scope=${scope}&response_type=code&state=${state}`;
-      
-      console.log("TikTok auth URL:", authUrl);
-      
-      // Redirect user to TikTok for authorization
       window.location.href = authUrl;
     } else if (provider === 'facebook') {
-      // Facebook OAuth flow - placeholder for now
       toast({
         title: "Facebook OAuth",
         description: "Facebook OAuth integration is coming soon.",
       });
       setIsLoading({...isLoading, facebook: false});
+    } else if (provider === 'tiktok') {
+      const tiktokClientKey = "sbaw2rsueubl3ct46b";
+      const redirectUri = encodeURIComponent(window.location.origin + '/auth/tiktok/callback');
+      const scope = 'user.info.basic,video.list';
+      const state = verifyToken || crypto.randomUUID();
+      
+      const authUrl = `https://www.tiktok.com/auth/authorize/?client_key=${tiktokClientKey}&redirect_uri=${redirectUri}&scope=${scope}&response_type=code&state=${state}`;
+      
+      console.log("TikTok auth URL:", authUrl);
+      
+      window.location.href = authUrl;
     }
   };
 

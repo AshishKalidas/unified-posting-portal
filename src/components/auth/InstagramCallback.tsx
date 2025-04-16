@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
@@ -55,33 +54,40 @@ const InstagramCallback = () => {
       return;
     }
 
-    // Log the received code and state for debugging
-    console.log("Instagram authorization code received:", code);
-    console.log("Instagram state parameter:", state);
-    
-    // For a proper implementation, exchange the code for a token
-    // We're getting "Invalid platform app" error, which is typical for Instagram apps
-    // that haven't been fully approved by Meta or haven't completed app review
     const exchangeTokenWithBackend = async () => {
       try {
-        // In a real implementation, this would call your backend endpoint
-        // For now, we'll simulate a successful response since we're getting platform validation errors
-        
-        // Simulate successful exchange and store mock tokens
+        const response = await fetch('http://localhost:3000/auth/instagram/exchange-token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            code,
+            redirect_uri: window.location.origin + '/auth/instagram/callback',
+            client_id: "1657587694854878",
+            client_secret: "your_client_secret_here"
+          }),
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+          throw new Error(data.error_message || 'Failed to exchange token');
+        }
+
         setStatus('success');
         toast({
           title: "Instagram Connected",
-          description: "Successfully connected your Instagram account (simulated).",
+          description: "Successfully connected your Instagram account.",
         });
-        
-        // Store in localStorage
+
         localStorage.setItem('instagram_auth', JSON.stringify({
           connected: true,
-          username: 'instagram_user',
+          username: data.username,
+          userId: data.userId,
           timestamp: new Date().toISOString()
         }));
-        
-        // Redirect back to settings page after success
+
         setTimeout(() => navigate('/settings'), 2000);
       } catch (error) {
         console.error('Token exchange error:', error);
@@ -89,14 +95,13 @@ const InstagramCallback = () => {
         setStatus('error');
         toast({
           title: "Instagram Connection Failed",
-          description: "Error during token exchange with backend.",
+          description: error.message || "Error during token exchange with backend.",
           variant: "destructive",
         });
         setTimeout(() => navigate('/settings'), 5000);
       }
     };
     
-    // Call the token exchange function
     exchangeTokenWithBackend();
   }, [location, navigate, toast]);
 
